@@ -1,21 +1,80 @@
 from tkinter import *
 import tkinter
 from PIL import Image, ImageTk
+from db import Database
+from tkinter import messagebox
+db = Database('tienda.db')
 
-#Funciones
+#                     FUNCIONES
+
+#Escribe la lista actualizada
 def llenar_lista():
-    print("Llenar")
+    lista_productos.delete(0, END)
+    for fila in db.capturar():
+        lista_productos.insert(END, fila)
+
+
+#Añade a la tabla los datos escritos en los entrys
 def añadir_producto():
-    print('Añadir')
+
+    if(texto_nombre_producto.get() == '' or texto_cliente.get() == '' or texto_tipo_producto.get() == '' or texto_precio_producto.get()):
+        messagebox.showerror('Campos requeridos', 'Por favor llenar todos los campos.')
+        return 
+    db.insertar(texto_nombre_producto.get(), texto_cliente.get(), texto_tipo_producto.get(), texto_precio_producto.get())
+    lista_productos.delete(0, END)
+    lista_productos.insert(END, texto_nombre_producto.get(), texto_cliente.get(), texto_tipo_producto.get(), texto_precio_producto.get())
+    limpiar_texto()
+    llenar_lista()
+
+
+
+#Escribe datos del registro seleccionado en los entrys
+def seleccionar_fila(event):
+
+    try:
+     global item
+     index = lista_productos.curselection()[0]
+     item = lista_productos.get(index) 
+
+     entry_nombre_producto.delete(0, END)
+     entry_nombre_producto.insert(END, item[1])
+
+     entry_cliente.delete(0, END)
+     entry_cliente.insert(END, item[2])
+
+     entry_tipo_producto.delete(0, END)
+     entry_tipo_producto.insert(END, item[3])
+
+     entry_precio_producto.delete(0, END)
+     entry_precio_producto.insert(END, item[4])
+    except IndexError:
+        pass
+
+#Remueve algun registro seleccionado
 def remover_producto():
-    print('Remover')
+
+    db.remover(item[0])
+    limpiar_texto()
+    llenar_lista()
+
+
+#Actualiza algun cambio en el registro
 def actualizar_producto():
-    print('Actualizar')
+
+    db.actualizar(item[0], texto_nombre_producto.get(), texto_cliente.get(), texto_tipo_producto.get(), texto_precio_producto.get())
+    llenar_lista()
+
+#Limpia texto de las entradas
 def limpiar_texto():
-    print('Limpiar')    
+    
+    entry_nombre_producto.delete(0, END)
+    entry_cliente.delete(0, END)
+    entry_tipo_producto.delete(0, END)
+    entry_precio_producto.delete(0, END)
+    
 
 
-
+#                     INTERFAZ
 
 
 #Crear ventana
@@ -77,12 +136,16 @@ label_imagen.grid(row=0, column=4, sticky=S)
 lista_productos = Listbox(app, height=8, width=70)
 lista_productos.grid(row=3, column=0, columnspan=3, rowspan=6, pady=20, padx=20)
 
+
 #Scrollbar
 scrollbar = Scrollbar(app)
 scrollbar.grid(row=3, column=3)
 
 lista_productos.configure(yscrollcommand=scrollbar.set)
 scrollbar.configure(command=lista_productos.yview)
+
+#Unir seleccion
+lista_productos.bind('<<ListboxSelect>>', seleccionar_fila)
 
 #Botones
 btn_añadir = Button(app, text='Añadir', width=12, command=añadir_producto)
@@ -99,8 +162,6 @@ btn_limpiar.grid(row=2, column=3)
 
 #Llenar Datos
 llenar_lista()
-
-
 
 #Empezar programa
 app.mainloop()
